@@ -94,3 +94,7 @@ Font, heading, and relative column width settings are performed by the function:
 Line-by-line filling of the table with data (in text format) is performed using the following combinations of structures:
 * Cols > Text
 * Cols > ColSpan > Text
+
+## Example
+
+![example result](https://github.com/iv-menshenin/crazy-grafica/blob/main/example/image.png)
