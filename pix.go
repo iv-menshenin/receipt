@@ -6,16 +6,18 @@ import (
 )
 
 const (
-	dpi    = 960.0
-	mmInch = 25.4
-
+	mmInch          = 25.4
 	measStr         = ",`Ц|@"
 	lineSpacing     = 1.25
 	cellPadding     = 1.5
 	defaultFontSize = 12
 )
 
+var dpi = 960.0
+
 type (
+	// Measure is a universal unit of measurement on canvas. Use this:
+	//  Millimeters, Inches, Pixels
 	Measure interface {
 		toPixel() int
 		toInch() float64
@@ -26,15 +28,26 @@ type (
 	millimeters float64
 )
 
-func ZeroPixel() Measure {
-	return Pixel(0)
+// SetDPI allows you to set the resolution (dots per inch)
+func SetDPI(newDpi float64) {
+	dpi = newDpi
 }
 
+// ZeroPixel is a distance of 0 pixels long
+func ZeroPixel() Measure {
+	return Pixels(0)
+}
+
+// NewRectangle allows you to create a rectangle using length measures:
+//	Millimeters, Inches, Pixels
+// example
+//	NewRectangle(ZeroPixel(), ZeroPixel(), Inches(1.0), Inches(1.0)) // box with sides 1 inch
 func NewRectangle(x0, y0, x1, y1 Measure) image.Rectangle {
 	return image.Rect(x0.toPixel(), y0.toPixel(), x1.toPixel(), y1.toPixel())
 }
 
-func Pixel(pix int) Measure {
+// Pixels - measures the distance in pixels
+func Pixels(pix int) Measure {
 	return pixels(pix)
 }
 
@@ -50,7 +63,8 @@ func (p pixels) toMillimeter() float64 {
 	return (float64(p) / dpi) * mmInch
 }
 
-func Inch(i float64) Measure {
+// Inches - measures the distance in inches
+func Inches(i float64) Measure {
 	return inch(i)
 }
 
@@ -66,6 +80,7 @@ func (i inch) toMillimeter() float64 {
 	return float64(i) * mmInch
 }
 
+// Millimeters - measures the distance in millimeters
 func Millimeters(m float64) Measure {
 	return millimeters(m)
 }

@@ -28,6 +28,7 @@ type (
 	}
 )
 
+// Text renders text to Canvas
 func Text(s string, options ...TextOption) DrawStruct {
 	return text{
 		text:    s,
@@ -52,6 +53,7 @@ func (t text) defaultOptions(options ...TextOption) DrawStruct {
 	return t
 }
 
+// OptionFont contains font settings
 func OptionFont(font *truetype.Font, fontSize float64, usePen pen) TextOption {
 	return textFont{
 		font:     font,
@@ -60,12 +62,15 @@ func OptionFont(font *truetype.Font, fontSize float64, usePen pen) TextOption {
 	}
 }
 
+// OptionAlignment lets you set horizontal alignment
+//  AlignLeft, AlignRight, AlignCenter
 func OptionAlignment(a Alignment) TextOption {
 	return textAlignment{
 		alignment: a,
 	}
 }
 
+// OptionCentered means that the text needs to be vertically aligned in the center
 func OptionCentered() TextOption {
 	return textCentered{}
 }
