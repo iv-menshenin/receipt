@@ -42,6 +42,14 @@ func NewPen(color color.Color, w Measure) pen {
 	}
 }
 
+func (p pen) textOptInt() int {
+	return 0
+}
+
+func (p pen) tableColumnOptInt() int {
+	return 0
+}
+
 func fillTextIntoRect(
 	text string,
 	img draw.Image,

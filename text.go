@@ -5,6 +5,7 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/goregular"
 	"image"
+	"reflect"
 )
 
 type (
@@ -48,6 +49,19 @@ func (t text) defaultOptions(options ...TextOption) DrawStruct {
 		return text{
 			text:    t.text,
 			options: options,
+		}
+	}
+	for _, o := range options {
+		rt := reflect.TypeOf(o)
+		var isPresent = false
+		for _, ot := range t.options {
+			isPresent = reflect.TypeOf(ot) == rt
+			if isPresent {
+				break
+			}
+		}
+		if !isPresent {
+			t.options = append(t.options, o)
 		}
 	}
 	return t
@@ -124,10 +138,13 @@ func (t text) WriteTo(canvas Canvas, rect image.Rectangle) image.Point {
 			vCentered: false,
 		}
 	)
+	var customPen = false
 	for _, opt := range t.options {
 		if f, ok := opt.(textFont); ok {
 			font = f.font
-			usePen = f.usePen
+			if !customPen {
+				usePen = f.usePen
+			}
 			fontSize = f.fontSize
 		}
 		if a, ok := opt.(textAlignment); ok {
@@ -135,6 +152,10 @@ func (t text) WriteTo(canvas Canvas, rect image.Rectangle) image.Point {
 		}
 		if _, ok := opt.(textCentered); ok {
 			alignment.vCentered = true
+		}
+		if pen, ok := opt.(pen); ok {
+			customPen = true
+			usePen = pen
 		}
 	}
 	if font == nil {

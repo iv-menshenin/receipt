@@ -83,7 +83,7 @@ func main() {
 				cg.Text("36.00"),
 				cg.Text("720.00"),
 				cg.Text("30.00"),
-				cg.Text("600.00"),
+				cg.Text("600.00", accPen),
 				cg.Text(""),
 			),
 			cg.Cols(
