@@ -13,7 +13,7 @@ const (
 	defaultFontSize = 12
 )
 
-var dpi = 960.0
+var dpi = 340.0
 
 type (
 	// Measure is a universal unit of measurement on canvas. Use this:
