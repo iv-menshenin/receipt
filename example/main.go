@@ -58,7 +58,8 @@ func main() {
 	tableMiddFont := cg.OptionFont(fontFace, 9, myPen)
 	tableSmallFont := cg.OptionFont(fontFace, 8, myPen)
 	tableBoldFont := cg.OptionFont(fontFaceB, 8, myPen)
-	lastPoint := canv.Write(cg.Padding(cg.Millimeters(5), cg.Lines(
+	canv.Write(cg.PaddingLeftRight(cg.Millimeters(5), cg.Lines(
+		cg.FixedY(cg.Millimeters(5)),
 		cg.PaddingLeftRight(cg.Millimeters(10), cg.Lines(
 			cg.Cols(
 				cg.Text(fmt.Sprintf("Order #%d %s", rand.Int(), time.Now().Format("01.02.2006 15:04")), cg.OptionAlignment(cg.AlignLeft), fontOpt),
@@ -66,7 +67,8 @@ func main() {
 			),
 			cg.Text("555-345-65-66 Menshenin Igor", fontOpt),
 		)),
-		cg.FixedY(cg.Millimeters(2)),
+	)))
+	lastPoint := canv.Write(cg.Padding4(cg.Millimeters(5), cg.Lines(
 		cg.Table(
 			[]cg.TableColumn{
 				cg.Column("PRODUCT NAME", .49, cg.OptionCentered(), tableMiddFont, cg.OptionAlignment(cg.AlignLeft)),
@@ -96,6 +98,15 @@ func main() {
 				cg.Text("120.00"),
 			),
 			cg.Cols(
+				cg.Text("SoLongTextWhichNeededToTestToAvoidInfinityIterationAndBadViewAndOtherOtherOtherOtherOther", cg.OptionCentered(), tableSmallFont),
+				cg.Text("20"),
+				cg.Text("36.00"),
+				cg.Text("720.00"),
+				cg.Text("30.00"),
+				cg.Text("600.00"),
+				cg.Text("120.00"),
+			),
+			cg.Cols(
 				cg.Empty(),
 				cg.ColSpan(cg.Text("1440.00", tableBoldFont, cg.OptionAlignment(cg.AlignRight)), 3),
 				cg.ColSpan(cg.Text("1200.00", tableBoldFont, cg.OptionAlignment(cg.AlignRight)), 2),
@@ -114,10 +125,10 @@ func main() {
 
 	out := img.SubImage(image.Rect(img.Bounds().Min.X, img.Bounds().Min.Y, img.Bounds().Max.X, lastPoint.Y))
 	// Кодировать как PNG.
-	outFile, _ := os.Create("/home/devalio/image.png")
+	outFile, _ := os.Create("./example/image.png")
 	png.Encode(outFile, out)
 	outFile.Close()
-	outFile, _ = os.Create("/home/devalio/image.jpeg")
+	outFile, _ = os.Create("./example/image.jpeg")
 	jpeg.Encode(outFile, out, &jpeg.Options{Quality: 100})
 	outFile.Close()
 }

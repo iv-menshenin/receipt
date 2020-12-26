@@ -50,32 +50,57 @@ func (p pen) tableColumnOptInt() int {
 	return 0
 }
 
-func fillTextIntoRect(
-	text string,
-	img draw.Image,
+func makeFontDrawer(
+	dst draw.Image,
 	fontData *truetype.Font,
+	fontColor color.Color,
 	fontSize float64,
-	rect image.Rectangle,
-	align cellAlignment,
-	usePen pen,
-) int {
-	fontDrawer := &font.Drawer{
-		Dst: img,
-		Src: image.NewUniform(usePen.color),
+	pos image.Point,
+) *font.Drawer {
+	return &font.Drawer{
+		Dst: dst,
+		Src: image.NewUniform(fontColor),
 		Face: truetype.NewFace(fontData, &truetype.Options{
 			Size:    fontSize,
 			Hinting: font.HintingFull,
 			DPI:     dpi,
 		}),
 		Dot: fixed.Point26_6{
-			X: fixed.I(rect.Min.X),
-			Y: fixed.I(rect.Min.Y),
+			X: fixed.I(pos.X),
+			Y: fixed.I(pos.Y),
 		},
 	}
+}
+
+func calcTextPositionX(
+	rect image.Rectangle,
+	textWidth fixed.Int26_6,
+	align cellAlignment,
+) fixed.Int26_6 {
+	xPosition := fixed.I(rect.Min.X)
+	switch align.hAlign {
+	case AlignRight:
+		xPosition = fixed.I(rect.Max.X) - textWidth
+	case AlignCenter:
+		xPosition += fixed.I((rect.Max.X-rect.Min.X)/2) - fixed.I(textWidth.Ceil()/2)
+	}
+	return xPosition
+}
+
+type textOnPos struct {
+	text string
+	dot  fixed.Point26_6
+}
+
+func splitAndFitToRectangle(
+	drawer *font.Drawer,
+	rect image.Rectangle,
+	text string,
+	align cellAlignment,
+) []textOnPos {
 	var (
-		textBounds, _ = fontDrawer.BoundString(measStr)
+		textBounds, _ = drawer.BoundString(measStr)
 		textHeight    = textBounds.Max.Y - textBounds.Min.Y
-		xPosition     = fixed.I(rect.Min.X)
 		yPosition     = fixed.I(rect.Min.Y + textHeight.Ceil())
 		maxYPosition  = fixed.I(rect.Min.Y + int(math.Round(float64(textHeight.Ceil())/1.5)))
 	)
@@ -85,33 +110,25 @@ func fillTextIntoRect(
 			yPosition = maxYPosition
 		}
 	}
-	calcPosition := func(textToWrite string) {
-		switch align.hAlign {
-		case AlignRight:
-			xPosition = fixed.I(rect.Max.X) - fontDrawer.MeasureString(textToWrite)
-		case AlignCenter:
-			xPosition += fixed.I((rect.Max.X-rect.Min.X)/2) - fixed.I(fontDrawer.MeasureString(textToWrite).Ceil()/2)
-		}
-		fontDrawer.Dot = fixed.Point26_6{
-			X: xPosition,
+	calcPosition := func(width fixed.Int26_6) fixed.Point26_6 {
+		return fixed.Point26_6{
+			X: calcTextPositionX(rect, width, align),
 			Y: yPosition,
 		}
 	}
-	writeStr := func(textToWrite string) {
-		fontDrawer.DrawString(textToWrite)
-	}
-	calcPosition(text)
-
-	if fontDrawer.MeasureString(text).Ceil() > rect.Max.X {
+	textSlice := make([]textOnPos, 0, 1)
+	textWidth := drawer.MeasureString(text)
+	if textWidth.Ceil() > rect.Max.X {
 		textChains := strings.Split(text, " ")
 		for {
+			dot := fixed.Point26_6{}
 			full := true
 			textToWrite := ""
 			for nn := 0; nn < len(textChains); nn++ {
 				w := strings.Join(textChains[:nn+1], " ")
-				calcPosition(w)
-				textBounds, _ = fontDrawer.BoundString(w)
-				if textBounds.Max.X > fixed.I(rect.Max.X) {
+				textEnd := drawer.MeasureString(w)
+				dot = calcPosition(textEnd)
+				if textEnd.Ceil() > rect.Max.X {
 					textToWrite = strings.Join(textChains[:nn], " ")
 					textChains = textChains[nn:]
 					full = false
@@ -126,7 +143,10 @@ func fillTextIntoRect(
 				textToWrite = textChains[0]
 				textChains = textChains[1:]
 			}
-			writeStr(textToWrite)
+			textSlice = append(textSlice, textOnPos{
+				text: textToWrite,
+				dot:  dot,
+			})
 			if len(textChains) == 0 {
 				break
 			} else {
@@ -134,9 +154,26 @@ func fillTextIntoRect(
 			}
 		}
 	} else {
-		writeStr(text)
+		textSlice = append(textSlice, textOnPos{
+			text: text,
+			dot:  calcPosition(textWidth),
+		})
 	}
+	return textSlice
+}
 
+func fillTextIntoRect(
+	drawer *font.Drawer,
+	text string,
+	rect image.Rectangle,
+	align cellAlignment,
+) int {
+	var yPosition fixed.Int26_6
+	for _, s := range splitAndFitToRectangle(drawer, rect, text, align) {
+		yPosition = s.dot.Y
+		drawer.Dot = s.dot
+		drawer.DrawString(s.text)
+	}
 	return yPosition.Ceil()
 }
 

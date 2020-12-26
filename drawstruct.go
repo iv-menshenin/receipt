@@ -7,8 +7,9 @@ import (
 
 type (
 	Canvas struct {
-		img  draw.Image
-		rect image.Rectangle
+		img   draw.Image
+		point image.Point
+		rect  image.Rectangle
 	}
 	DrawStruct interface {
 		WriteTo(Canvas, image.Rectangle) image.Point
@@ -32,8 +33,11 @@ func NewCanvas(img draw.Image, rect image.Rectangle) Canvas {
 	}
 }
 
-func (c Canvas) Write(d DrawStruct) image.Point {
-	return d.WriteTo(c, c.rect)
+// Write will draw the block of objects, starting from the vertical position
+// at which drawing of the previous block of objects was completed
+func (c *Canvas) Write(d DrawStruct) image.Point {
+	c.point = d.WriteTo(*c, image.Rect(0, c.point.Y, c.rect.Max.X, c.rect.Max.Y))
+	return c.point
 }
 
 func Lines(d ...DrawStruct) DrawStruct {
