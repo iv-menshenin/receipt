@@ -57,6 +57,7 @@ func main() {
 	fontAccentOpt := cg.OptionFont(fontFace, fontSize, accPen)
 	tableMiddFont := cg.OptionFont(fontFace, 9, myPen)
 	tableSmallFont := cg.OptionFont(fontFace, 8, myPen)
+	tableSmallFont2 := cg.OptionFont(fontFace, 7, myPen)
 	tableBoldFont := cg.OptionFont(fontFaceB, 8, myPen)
 	canv.Write(cg.PaddingLeftRight(cg.Millimeters(5), cg.Lines(
 		cg.FixedY(cg.Millimeters(5)),
@@ -72,12 +73,12 @@ func main() {
 		cg.Table(
 			[]cg.TableColumn{
 				cg.Column("PRODUCT NAME", .49, cg.OptionCentered(), tableMiddFont, cg.OptionAlignment(cg.AlignLeft)),
-				cg.Column("COUNT", .06, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignCenter)),
+				cg.Column("COUNT", .06, cg.OptionCentered(), tableSmallFont2, cg.OptionAlignment(cg.AlignCenter)),
 				cg.Column("PRICE", .08, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignRight)),
 				cg.Column("AMOUNT", .1, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignRight)),
 				cg.Column("PRICE WS", .09, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignRight)),
 				cg.Column("AMOUNT WS", .1, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignRight)),
-				cg.Column("DELIVERY", .08, cg.OptionCentered(), tableSmallFont, cg.OptionAlignment(cg.AlignRight)),
+				cg.Column("DELIVERY", .08, cg.OptionCentered(), tableSmallFont2, cg.OptionAlignment(cg.AlignRight)),
 			},
 			cg.Cols(
 				cg.Text("Some product name. Pretty stuff with long name. 60x90x12 box everywhere. Light-green. BEER", cg.OptionCentered(), tableSmallFont),
@@ -98,7 +99,7 @@ func main() {
 				cg.Text("120.00"),
 			),
 			cg.Cols(
-				cg.Text("SoLongTextWhichNeededToTestToAvoidInfinityIterationAndBadViewAndOtherOtherOtherOtherOther", cg.OptionCentered(), tableSmallFont),
+				cg.Text("SoLongTextWhichNeededToTestToAvoidInfinityIterationAndBadViewAndOtherOtherOtherOtherOther or not", cg.OptionCentered(), tableSmallFont),
 				cg.Text("20"),
 				cg.Text("36.00"),
 				cg.Text("720.00"),

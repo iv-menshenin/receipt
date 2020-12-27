@@ -90,10 +90,11 @@ type textOnPos struct {
 func getFittedTextChains(
 	drawer *font.Drawer,
 	textChains []string,
+	separator string,
 	maxX int,
 ) int {
 	for nn := 0; nn < len(textChains); nn++ {
-		w := strings.Join(textChains[:nn+1], " ")
+		w := strings.Join(textChains[:nn+1], separator)
 		textEnd := drawer.MeasureString(w)
 		if textEnd.Ceil() > maxX {
 			return nn
@@ -128,18 +129,22 @@ func splitAndFitToRectangle(
 	}
 	textSlice := make([]textOnPos, 0, 1)
 	textWidth := drawer.MeasureString(text)
-	if textWidth.Ceil() > rect.Max.X {
+	maxWidth := rect.Dx()
+	if maxWidth == 0 {
+		maxWidth = rect.Max.X
+	}
+	if textWidth.Ceil() > maxWidth {
 		separator := " "
 		textChains := strings.Split(text, separator)
 		for {
 			var (
 				textToWrite = ""
-				nChains     = getFittedTextChains(drawer, textChains, rect.Max.X)
+				nChains     = getFittedTextChains(drawer, textChains, separator, maxWidth)
 			)
 			if nChains < 1 {
 				separator = ""
 				textChains = strings.Split(text, separator)
-				nChains = getFittedTextChains(drawer, textChains, rect.Max.X)
+				nChains = getFittedTextChains(drawer, textChains, separator, maxWidth)
 			}
 			if nChains == len(textChains) {
 				textToWrite = strings.Join(textChains, separator)
@@ -147,7 +152,11 @@ func splitAndFitToRectangle(
 				textToWrite = strings.Join(textChains[:nChains+1], separator)
 			}
 			textEnd := drawer.MeasureString(textToWrite)
-			textChains = textChains[nChains:]
+			if nChains < len(textChains) {
+				textChains = textChains[nChains+1:]
+			} else {
+				textChains = nil
+			}
 			textSlice = append(textSlice, textOnPos{
 				text: textToWrite,
 				dot:  calcPosition(textEnd),
