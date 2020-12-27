@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/golang/freetype"
-	cg "github.com/iv-menshenin/crazy-grafica"
+	cg "github.com/iv-menshenin/receipt"
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
 	"image"

@@ -1,4 +1,4 @@
-module github.com/iv-menshenin/crazy-grafica
+module github.com/iv-menshenin/receipt
 
 go 1.14
 
