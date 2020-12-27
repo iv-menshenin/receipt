@@ -50,32 +50,67 @@ func (p pen) tableColumnOptInt() int {
 	return 0
 }
 
-func fillTextIntoRect(
-	text string,
-	img draw.Image,
+func makeFontDrawer(
+	dst draw.Image,
 	fontData *truetype.Font,
+	fontColor color.Color,
 	fontSize float64,
-	rect image.Rectangle,
-	align cellAlignment,
-	usePen pen,
-) int {
-	fontDrawer := &font.Drawer{
-		Dst: img,
-		Src: image.NewUniform(usePen.color),
+) *font.Drawer {
+	return &font.Drawer{
+		Dst: dst,
+		Src: image.NewUniform(fontColor),
 		Face: truetype.NewFace(fontData, &truetype.Options{
 			Size:    fontSize,
 			Hinting: font.HintingFull,
 			DPI:     dpi,
 		}),
-		Dot: fixed.Point26_6{
-			X: fixed.I(rect.Min.X),
-			Y: fixed.I(rect.Min.Y),
-		},
 	}
+}
+
+func calcTextPositionX(
+	rect image.Rectangle,
+	textWidth fixed.Int26_6,
+	align cellAlignment,
+) fixed.Int26_6 {
+	xPosition := fixed.I(rect.Min.X)
+	switch align.hAlign {
+	case AlignRight:
+		xPosition = fixed.I(rect.Max.X) - textWidth
+	case AlignCenter:
+		xPosition += fixed.I((rect.Max.X-rect.Min.X)/2) - fixed.I(textWidth.Ceil()/2)
+	}
+	return xPosition
+}
+
+type textOnPos struct {
+	text string
+	dot  fixed.Point26_6
+}
+
+func getFittedTextChains(
+	drawer *font.Drawer,
+	textChains []string,
+	maxX int,
+) int {
+	for nn := 0; nn < len(textChains); nn++ {
+		w := strings.Join(textChains[:nn+1], " ")
+		textEnd := drawer.MeasureString(w)
+		if textEnd.Ceil() > maxX {
+			return nn
+		}
+	}
+	return len(textChains)
+}
+
+func splitAndFitToRectangle(
+	drawer *font.Drawer,
+	rect image.Rectangle,
+	text string,
+	align cellAlignment,
+) []textOnPos {
 	var (
-		textBounds, _ = fontDrawer.BoundString(measStr)
+		textBounds, _ = drawer.BoundString(measStr)
 		textHeight    = textBounds.Max.Y - textBounds.Min.Y
-		xPosition     = fixed.I(rect.Min.X)
 		yPosition     = fixed.I(rect.Min.Y + textHeight.Ceil())
 		maxYPosition  = fixed.I(rect.Min.Y + int(math.Round(float64(textHeight.Ceil())/1.5)))
 	)
@@ -85,48 +120,38 @@ func fillTextIntoRect(
 			yPosition = maxYPosition
 		}
 	}
-	calcPosition := func(textToWrite string) {
-		switch align.hAlign {
-		case AlignRight:
-			xPosition = fixed.I(rect.Max.X) - fontDrawer.MeasureString(textToWrite)
-		case AlignCenter:
-			xPosition += fixed.I((rect.Max.X-rect.Min.X)/2) - fixed.I(fontDrawer.MeasureString(textToWrite).Ceil()/2)
-		}
-		fontDrawer.Dot = fixed.Point26_6{
-			X: xPosition,
+	calcPosition := func(width fixed.Int26_6) fixed.Point26_6 {
+		return fixed.Point26_6{
+			X: calcTextPositionX(rect, width, align),
 			Y: yPosition,
 		}
 	}
-	writeStr := func(textToWrite string) {
-		fontDrawer.DrawString(textToWrite)
-	}
-	calcPosition(text)
-
-	if fontDrawer.MeasureString(text).Ceil() > rect.Max.X {
-		textChains := strings.Split(text, " ")
+	textSlice := make([]textOnPos, 0, 1)
+	textWidth := drawer.MeasureString(text)
+	if textWidth.Ceil() > rect.Max.X {
+		separator := " "
+		textChains := strings.Split(text, separator)
 		for {
-			full := true
-			textToWrite := ""
-			for nn := 0; nn < len(textChains); nn++ {
-				w := strings.Join(textChains[:nn+1], " ")
-				calcPosition(w)
-				textBounds, _ = fontDrawer.BoundString(w)
-				if textBounds.Max.X > fixed.I(rect.Max.X) {
-					textToWrite = strings.Join(textChains[:nn], " ")
-					textChains = textChains[nn:]
-					full = false
-					break
-				}
+			var (
+				textToWrite = ""
+				nChains     = getFittedTextChains(drawer, textChains, rect.Max.X)
+			)
+			if nChains < 1 {
+				separator = ""
+				textChains = strings.Split(text, separator)
+				nChains = getFittedTextChains(drawer, textChains, rect.Max.X)
 			}
-			if full {
-				textToWrite = strings.Join(textChains, " ")
-				textChains = nil
+			if nChains == len(textChains) {
+				textToWrite = strings.Join(textChains, separator)
+			} else {
+				textToWrite = strings.Join(textChains[:nChains+1], separator)
 			}
-			if textToWrite == "" {
-				textToWrite = textChains[0]
-				textChains = textChains[1:]
-			}
-			writeStr(textToWrite)
+			textEnd := drawer.MeasureString(textToWrite)
+			textChains = textChains[nChains:]
+			textSlice = append(textSlice, textOnPos{
+				text: textToWrite,
+				dot:  calcPosition(textEnd),
+			})
 			if len(textChains) == 0 {
 				break
 			} else {
@@ -134,9 +159,26 @@ func fillTextIntoRect(
 			}
 		}
 	} else {
-		writeStr(text)
+		textSlice = append(textSlice, textOnPos{
+			text: text,
+			dot:  calcPosition(textWidth),
+		})
 	}
+	return textSlice
+}
 
+func fillTextIntoRect(
+	drawer *font.Drawer,
+	text string,
+	rect image.Rectangle,
+	align cellAlignment,
+) int {
+	var yPosition fixed.Int26_6
+	for _, s := range splitAndFitToRectangle(drawer, rect, text, align) {
+		yPosition = s.dot.Y
+		drawer.Dot = s.dot
+		drawer.DrawString(s.text)
+	}
 	return yPosition.Ceil()
 }
 
@@ -153,16 +195,6 @@ func drawRect(img draw.Image, rect image.Rectangle, usePen pen) {
 			img.Set(rect.Max.X+t, y, usePen.color)
 		}
 	}
-}
-
-func padRect(rect image.Rectangle, padding int) image.Rectangle {
-	top := rect.Min.Y + padding
-	bottom := rect.Max.Y - padding
-	if !(bottom > top) {
-		bottom = top + 1
-	}
-	newRect := image.Rect(rect.Min.X+padding, top, rect.Max.X-padding, bottom)
-	return newRect
 }
 
 func padRect4(rect image.Rectangle, l, t, r, b int) image.Rectangle {

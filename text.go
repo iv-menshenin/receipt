@@ -140,27 +140,30 @@ func (t text) WriteTo(canvas Canvas, rect image.Rectangle) image.Point {
 	)
 	var customPen = false
 	for _, opt := range t.options {
-		if f, ok := opt.(textFont); ok {
-			font = f.font
+		switch v := opt.(type) {
+		case textFont:
+			font = v.font
 			if !customPen {
-				usePen = f.usePen
+				usePen = v.usePen
 			}
-			fontSize = f.fontSize
-		}
-		if a, ok := opt.(textAlignment); ok {
-			alignment.hAlign = a.alignment
-		}
-		if _, ok := opt.(textCentered); ok {
+			fontSize = v.fontSize
+		case textAlignment:
+			alignment.hAlign = v.alignment
+		case textCentered:
 			alignment.vCentered = true
-		}
-		if pen, ok := opt.(pen); ok {
+		case pen:
 			customPen = true
-			usePen = pen
+			usePen = v
 		}
 	}
 	if font == nil {
 		font = getDefaultFont()
 	}
-	y := fillTextIntoRect(t.text, canvas.img, font, fontSize, rect, alignment, usePen)
-	return image.Point{X: rect.Max.X, Y: y}
+	lastY := fillTextIntoRect(
+		makeFontDrawer(canvas.img, font, usePen.color, fontSize),
+		t.text,
+		rect,
+		alignment,
+	)
+	return image.Point{X: rect.Max.X, Y: lastY}
 }
