@@ -160,7 +160,7 @@ func (t text) WriteTo(canvas Canvas, rect image.Rectangle) image.Point {
 		font = getDefaultFont()
 	}
 	lastY := fillTextIntoRect(
-		makeFontDrawer(canvas.img, font, usePen.color, fontSize, rect.Min),
+		makeFontDrawer(canvas.img, font, usePen.color, fontSize),
 		t.text,
 		rect,
 		alignment,

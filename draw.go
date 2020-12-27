@@ -55,7 +55,6 @@ func makeFontDrawer(
 	fontData *truetype.Font,
 	fontColor color.Color,
 	fontSize float64,
-	pos image.Point,
 ) *font.Drawer {
 	return &font.Drawer{
 		Dst: dst,
@@ -65,10 +64,6 @@ func makeFontDrawer(
 			Hinting: font.HintingFull,
 			DPI:     dpi,
 		}),
-		Dot: fixed.Point26_6{
-			X: fixed.I(pos.X),
-			Y: fixed.I(pos.Y),
-		},
 	}
 }
 
@@ -90,6 +85,21 @@ func calcTextPositionX(
 type textOnPos struct {
 	text string
 	dot  fixed.Point26_6
+}
+
+func getFittedTextChains(
+	drawer *font.Drawer,
+	textChains []string,
+	maxX int,
+) int {
+	for nn := 0; nn < len(textChains); nn++ {
+		w := strings.Join(textChains[:nn+1], " ")
+		textEnd := drawer.MeasureString(w)
+		if textEnd.Ceil() > maxX {
+			return nn
+		}
+	}
+	return len(textChains)
 }
 
 func splitAndFitToRectangle(
@@ -119,33 +129,28 @@ func splitAndFitToRectangle(
 	textSlice := make([]textOnPos, 0, 1)
 	textWidth := drawer.MeasureString(text)
 	if textWidth.Ceil() > rect.Max.X {
-		textChains := strings.Split(text, " ")
+		separator := " "
+		textChains := strings.Split(text, separator)
 		for {
-			dot := fixed.Point26_6{}
-			full := true
-			textToWrite := ""
-			for nn := 0; nn < len(textChains); nn++ {
-				w := strings.Join(textChains[:nn+1], " ")
-				textEnd := drawer.MeasureString(w)
-				dot = calcPosition(textEnd)
-				if textEnd.Ceil() > rect.Max.X {
-					textToWrite = strings.Join(textChains[:nn], " ")
-					textChains = textChains[nn:]
-					full = false
-					break
-				}
+			var (
+				textToWrite = ""
+				nChains     = getFittedTextChains(drawer, textChains, rect.Max.X)
+			)
+			if nChains < 1 {
+				separator = ""
+				textChains = strings.Split(text, separator)
+				nChains = getFittedTextChains(drawer, textChains, rect.Max.X)
 			}
-			if full {
-				textToWrite = strings.Join(textChains, " ")
-				textChains = nil
+			if nChains == len(textChains) {
+				textToWrite = strings.Join(textChains, separator)
+			} else {
+				textToWrite = strings.Join(textChains[:nChains+1], separator)
 			}
-			if textToWrite == "" {
-				textToWrite = textChains[0]
-				textChains = textChains[1:]
-			}
+			textEnd := drawer.MeasureString(textToWrite)
+			textChains = textChains[nChains:]
 			textSlice = append(textSlice, textOnPos{
 				text: textToWrite,
-				dot:  dot,
+				dot:  calcPosition(textEnd),
 			})
 			if len(textChains) == 0 {
 				break
@@ -190,16 +195,6 @@ func drawRect(img draw.Image, rect image.Rectangle, usePen pen) {
 			img.Set(rect.Max.X+t, y, usePen.color)
 		}
 	}
-}
-
-func padRect(rect image.Rectangle, padding int) image.Rectangle {
-	top := rect.Min.Y + padding
-	bottom := rect.Max.Y - padding
-	if !(bottom > top) {
-		bottom = top + 1
-	}
-	newRect := image.Rect(rect.Min.X+padding, top, rect.Max.X-padding, bottom)
-	return newRect
 }
 
 func padRect4(rect image.Rectangle, l, t, r, b int) image.Rectangle {
