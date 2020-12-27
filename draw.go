@@ -1,4 +1,4 @@
-package crazy_grafica
+package receipt
 
 import (
 	"github.com/golang/freetype/truetype"
