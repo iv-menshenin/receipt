@@ -11,7 +11,7 @@ All drawing operations on the canvas are performed using the document structure 
 Canvas is the main object which simply stores a link to the image and the dimensions of the work area rectangle.
 
 ```go
-    import cg "github.com/iv-menshenin/crazy-grafica"
+    import cg "github.com/iv-menshenin/receipt"
 
 	width := cg.Millimeters(210.0)
 	height := cg.Millimeters(297.0)
