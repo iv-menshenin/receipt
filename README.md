@@ -1,4 +1,4 @@
-# crazy-grafica
+# receipt
 
 ## Introduction
 Once I needed to develop a system in a short time that could print a receipt. To do this, you can use the standard library "image/draw".
@@ -43,7 +43,7 @@ In order to render the necessary information, we must parse the document into st
 ```
 
 canv.Write renders the object to the Canvas, drawing is performed sequentially - from top to bottom from left to right. The canv.Write method returns the coordinate of the bottom-right point at which drawing ended.    
-You can see how it works with an [example](https://github.com/iv-menshenin/crazy-grafica/blob/main/example/main.go).
+You can see how it works with an [example](https://github.com/iv-menshenin/receipt/blob/main/example/main.go).
 
 ## Elements
 
@@ -97,4 +97,4 @@ Line-by-line filling of the table with data (in text format) is performed using 
 
 ## Example
 
-![example result](https://github.com/iv-menshenin/crazy-grafica/blob/main/example/image.png)
+![example result](https://github.com/iv-menshenin/receipt/blob/main/example/image.png)
